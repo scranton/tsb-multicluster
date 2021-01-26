@@ -243,8 +243,8 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
-        # env:
-        # - name: DETAILS_HOSTNAME
-        #   value: details.mesh.local
+        env:
+        - name: DETAILS_HOSTNAME
+          value: details.mesh.local
         # - name: RATINGS_HOSTNAME
         #   value: ratings.cx.tetrate.info

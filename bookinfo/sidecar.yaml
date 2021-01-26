@@ -1,0 +1,22 @@
+--- 
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: gcp-ratings-no-iptables
+  namespace: bookinfo
+spec:
+  workloadSelector:
+    labels:
+      cloud: gcp
+      class: vm           # to avoid interfering with configuration of sidecars on k8s 
+      app: ratings
+  ingress:
+  - port:
+      number: 9080
+      protocol: HTTP
+      name: http
+    defaultEndpoint: 127.0.0.1:9080
+  egress:
+  - bind: 127.0.0.2
+    hosts:
+    - "./*"
