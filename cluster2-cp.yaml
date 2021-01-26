@@ -1,0 +1,18 @@
+
+---
+apiVersion: install.tetrate.io/v1alpha1
+kind: ControlPlane
+metadata:
+  name: controlplane
+  namespace: istio-system
+spec:
+  hub: gcr.io/abz-env
+  telemetryStore:
+    elastic:
+      host: tsb.demo.zwickey.net
+      port: 8443
+  managementPlane:
+    host: tsb.demo.zwickey.net
+    port: 8443
+    clusterName: gke2-cluster
+    tenant: tetrate
