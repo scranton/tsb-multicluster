@@ -1,0 +1,13 @@
+---
+apiversion: api.tsb.tetrate.io/v2
+kind: Workspace
+metadata:
+  tenant: tetrate
+  name: bookinfo-workspace
+spec:
+  description: bookinfo
+  displayName: bookinfo
+  namespaceSelector:
+    names:
+      - "*/default"
+      - "*/bookinfo"

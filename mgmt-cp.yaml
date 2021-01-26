@@ -1,0 +1,19 @@
+
+---
+apiVersion: install.tetrate.io/v1alpha1
+kind: ControlPlane
+metadata:
+  name: controlplane
+  namespace: istio-system
+spec:
+  tier1Cluster: true
+  hub: xxx
+  telemetryStore:
+    elastic:
+      host: xxx
+      port: 8443
+  managementPlane:
+    host: xxx
+    port: 8443
+    clusterName: mgmt-cluster
+    tenant: tetrate

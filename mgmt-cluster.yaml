@@ -1,0 +1,9 @@
+---
+apiVersion: api.tsb.tetrate.io/v2
+kind: Cluster
+metadata:
+  name: mgmt-cluster
+  tenant: tetrate
+spec:
+  tokenTtl: "10000h"
+  tier1Cluster: true

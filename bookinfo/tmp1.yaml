@@ -1,0 +1,16 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: tmp-gateway
+  namespace: default
+spec:
+  selector:
+    app: tsb-tier1
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"

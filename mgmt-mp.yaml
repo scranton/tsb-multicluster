@@ -1,0 +1,9 @@
+---
+apiVersion: install.tetrate.io/v1alpha1
+kind: ManagementPlane
+metadata:
+  namespace: tsb
+  name: tsbmgmtplane
+spec:
+  hub: xxxx
+  tenant: tetrate
