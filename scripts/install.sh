@@ -8,7 +8,6 @@ mkdir -p generated/cluster1
 mkdir -p generated/cluster2
 mkdir -p generated/bookinfo
 
-
 echo "Deploying mgmt cluster..."
 gcloud container clusters create $(yq r $VARS_YAML gcp.mgmt.clusterName) \
     --region $(yq r $VARS_YAML gcp.mgmt.region) \
@@ -283,6 +282,12 @@ tctl apply -f bookinfo/workspace.yaml
 cp bookinfo/tsb.yaml generated/bookinfo/tsb.yaml
 yq write generated/bookinfo/tsb.yaml -d2 -i "spec.http[0].hostname" $(yq r $VARS_YAML bookinfo.fqdn)
 yq write generated/bookinfo/tsb.yaml -d3 -i "spec.externalServers[0].hostname" $(yq r $VARS_YAML bookinfo.fqdn)
+
+# Prepare VM Expansion
+# Create VM
+# Prepare VM
+# Update YAMLs
+
 
 #don't apply this so we can demo
 #tctl apply -f generated/bookinfo/tsb.yaml  
