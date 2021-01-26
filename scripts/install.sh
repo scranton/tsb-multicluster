@@ -160,10 +160,10 @@ tctl install manifest cluster-operator \
 tctl install manifest cluster-operator \
     --registry $(yq r $VARS_YAML tetrate.registry) > generated/cluster2/cp-operator.yaml
 cp cluster1.yaml generated/cluster1/
-yq write generated/cluster1/cluster1.yaml -i "spec.locality" $(yq r $VARS_YAML gcp.workload1.region)
+yq write generated/cluster1/cluster1.yaml -i "spec.locality.region" $(yq r $VARS_YAML gcp.workload1.region)
 tctl apply -f generated/cluster1/cluster1.yaml
 cp cluster2.yaml generated/cluster2/
-yq write generated/cluster2/cluster2.yaml -i "spec.locality" $(yq r $VARS_YAML gcp.workload2.region)
+yq write generated/cluster2/cluster2.yaml -i "spec.locality.region" $(yq r $VARS_YAML gcp.workload2.region)
 tctl apply -f generated/cluster2/cluster2.yaml
 tctl install cluster-certs --cluster gke1-cluster > generated/cluster1/cluster-certs.yaml
 tctl install cluster-certs --cluster gke2-cluster > generated/cluster2/cluster-certs.yaml
@@ -208,14 +208,19 @@ kubectl apply -n bookinfo -f bookinfo/cluster-ingress-gw.yaml
 kubectl -n bookinfo create secret tls bookinfo-certs \
     --key $(yq r $VARS_YAML k8s.bookinfoCertDir)/privkey.pem \
     --cert $(yq r $VARS_YAML k8s.bookinfoCertDir)/fullchain.pem
-sleep 30
+sleep 10s
+while kubectl get service tsb-gateway-bookinfo -n bookinfo | grep pending | wc -l | grep 0 ; [ $? -ne 0 ]; do
+    echo Gateway IP not assigned
+    sleep 5s
+done
 export GATEWAY_IP=$(kubectl get service tsb-gateway-bookinfo -n bookinfo -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 kubectl apply -f bookinfo/tmp.yaml
 for i in {1..50}
 do
-   curl -vv http://$GATEWAY_IP
+   curl -vv http://$GATEWAY_IP/productpage\?u=normal
 done
 kubectl delete -f bookinfo/tmp.yaml
+kubectl apply -n bookinfo -f bookinfo/bookinfo-multi.yaml
 
 echo "Deploying workload cluster 2..."
 gcloud container clusters create $(yq r $VARS_YAML gcp.workload2.clusterName) \
@@ -246,20 +251,26 @@ while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 
     echo TSB control plane is not yet ready
     sleep 5s
 done
+#Bookinfo
 kubectl create ns bookinfo
 kubectl apply -n bookinfo -f bookinfo/bookinfo.yaml
 kubectl apply -n bookinfo -f bookinfo/cluster-ingress-gw.yaml
 kubectl -n bookinfo create secret tls bookinfo-certs \
     --key $(yq r $VARS_YAML k8s.bookinfoCertDir)/privkey.pem \
     --cert $(yq r $VARS_YAML k8s.bookinfoCertDir)/fullchain.pem
-sleep 30
+sleep 10s
+while kubectl get service tsb-gateway-bookinfo -n bookinfo | grep pending | wc -l | grep 0 ; [ $? -ne 0 ]; do
+    echo Gateway IP not assigned
+    sleep 5s
+done
 export GATEWAY_IP=$(kubectl get service tsb-gateway-bookinfo -n bookinfo -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 kubectl apply -f bookinfo/tmp.yaml
 for i in {1..50}
 do
-   curl -vv http://$GATEWAY_IP
+   curl -vv http://$GATEWAY_IP/productpage\?u=normal
 done
 kubectl delete -f bookinfo/tmp.yaml
+kubectl apply -n bookinfo -f bookinfo/bookinfo-multi.yaml
 
 #Setup TSB Objects
 tctl apply -f bookinfo/workspace.yaml

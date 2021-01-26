@@ -1,0 +1,32 @@
+tetrate:
+  apiUser: adamzwickey
+  apiKey: xxxxxxxxxxxxx
+  registry: gcr.io/abz-env
+  skipImages: false
+k8s:
+  istioCertDir: /Users/zwickey/.getistio/istio/official/1.7.5/samples/certs/
+  bookinfoCertDir: /Users/zwickey/tools/certbot/certs/live/tetrate.zwickey.net/
+gcp:
+  accountJsonKey: /Users/zwickey/cloud/gcp/key.json 
+  env: abz-env
+  acme:
+    email: adam@tetrate.io
+    dnsZone: zwickey.net
+    dnsZoneId: zwickey-net-zone
+  mgmt:
+    clusterName: tsb-mgmt
+    region: us-east1
+    machineType: e2-standard-2
+    fqdn: tsb.demo.zwickey.net
+    username: admin
+    password: admin
+  workload1:
+    clusterName: gke-cluster-1
+    region: us-east1
+    machineType: e2-standard-2
+  workload2:
+    clusterName: gke-cluster-2
+    region: us-west1
+    machineType: e2-standard-2
+bookinfo:
+  fqdn: bookinfo.tetrate.zwickey.net
