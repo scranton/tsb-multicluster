@@ -32,6 +32,7 @@ do
 done
 kubectl delete -f bookinfo/tmp.yaml
 kubectl apply -n bookinfo -f bookinfo/bookinfo-multi.yaml
+k delete po -l app=tsb-gateway-bookinfo
 
 gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.workload2.clusterName) \
    --region $(yq r $VARS_YAML gcp.workload2.region) --project $(yq r $VARS_YAML gcp.env)
@@ -48,6 +49,7 @@ do
 done
 kubectl delete -f bookinfo/tmp.yaml
 kubectl apply -n bookinfo -f bookinfo/bookinfo-multi.yaml
+k delete po -l app=tsb-gateway-bookinfo
 
 # VM
 gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.workload1.clusterName) \

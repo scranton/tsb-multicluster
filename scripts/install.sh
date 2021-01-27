@@ -122,6 +122,7 @@ while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 
     echo TSB control plane is not yet ready
     sleep 5s
 done
+kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
 
 #Bookinfo
 kubectl create secret tls bookinfo-certs -n default \
@@ -200,6 +201,8 @@ while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 
     echo TSB control plane is not yet ready
     sleep 5s
 done
+kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
+
 #Bookinfo
 kubectl create ns bookinfo
 kubectl apply -n bookinfo -f bookinfo/bookinfo.yaml
@@ -208,7 +211,7 @@ kubectl -n bookinfo create secret tls bookinfo-certs \
     --key $(yq r $VARS_YAML k8s.bookinfoCertDir)/privkey.pem \
     --cert $(yq r $VARS_YAML k8s.bookinfoCertDir)/fullchain.pem
 while kubectl get po -n bookinfo | grep Running | wc -l | grep 7 ; [ $? -ne 0 ]; do
-    echo Cert Manager is not yet ready
+    echo Bookinfo is not yet ready
     sleep 5s
 done
 while kubectl get service tsb-gateway-bookinfo -n bookinfo | grep pending | wc -l | grep 0 ; [ $? -ne 0 ]; do
@@ -253,6 +256,8 @@ while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 
     echo TSB control plane is not yet ready
     sleep 5s
 done
+kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
+
 #Bookinfo
 kubectl create ns bookinfo
 kubectl apply -n bookinfo -f bookinfo/bookinfo.yaml
