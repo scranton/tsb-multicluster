@@ -28,5 +28,13 @@ gcp:
     clusterName: gke-cluster-2
     region: us-west1
     machineType: e2-standard-2
+  vm:
+    name: ratings-vm
+    networkZone: us-east1-b
+    network: default
+    tag: ratings
+    sshUser: zwickey
+    # Format is <username:ssh-rsa key>
+    gcpPublicKey: "xxxxx:ssh-rsa\ xxx\ xxxx@xxxx"
 bookinfo:
   fqdn: bookinfo.tetrate.zwickey.net
