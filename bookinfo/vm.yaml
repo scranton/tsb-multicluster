@@ -5,13 +5,13 @@ metadata:
   name: ratings-vm
   namespace: bookinfo
   annotations:
-    sidecar-bootstrap.istio.io/ssh-host: 34.73.147.79
-    sidecar-bootstrap.istio.io/ssh-user: zwickey
+    sidecar-bootstrap.istio.io/ssh-host: xxx
+    sidecar-bootstrap.istio.io/ssh-user: xxx
     sidecar-bootstrap.istio.io/proxy-config-dir: /etc/istio-proxy
     sidecar-bootstrap.istio.io/proxy-image-hub: docker.io/tetrate
-    sidecar-bootstrap.istio.io/proxy-instance-ip: 10.142.0.50
+    sidecar-bootstrap.istio.io/proxy-instance-ip: xxx
 spec:
-  address: 10.142.0.50
+  address: xxx
   labels:
     cloud: gcp
     class: vm
