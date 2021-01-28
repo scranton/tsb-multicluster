@@ -12,3 +12,6 @@ gcloud container clusters delete $(yq r $VARS_YAML gcp.workload2.clusterName) \
 echo "Destroying mgmt cluster..."
 gcloud container clusters delete $(yq r $VARS_YAML gcp.mgmt.clusterName) \
    --region $(yq r $VARS_YAML gcp.mgmt.region) --quiet
+gcloud beta compute --project=$(yq r $VARS_YAML gcp.env) instances delete $(yq r $VARS_YAML gcp.vm.name) \
+  --zone=$(yq r $VARS_YAML gcp.vm.networkZone) --quiet
+rm -rf ~/.ssh/known_hosts

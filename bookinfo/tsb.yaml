@@ -44,7 +44,7 @@ spec:
       port: 443
       hostname: xxxx
       tls:
-        mode: MUTUAL
+        mode: SIMPLE
         secretName: bookinfo-certs
       routing:
         rules:
@@ -55,7 +55,7 @@ spec:
       port: 9080
       hostname: "details.mesh.local"
       tls:
-        mode: MUTUAL
+        mode: SIMPLE
         secretName: bookinfo-certs
       routing:
         rules:

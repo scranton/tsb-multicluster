@@ -118,11 +118,12 @@ yq write generated/mgmt/mgmt-cp.yaml -i "spec.hub" $(yq r $VARS_YAML tetrate.reg
 yq write generated/mgmt/mgmt-cp.yaml -i "spec.telemetryStore.elastic.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 yq write generated/mgmt/mgmt-cp.yaml -i "spec.managementPlane.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 kubectl apply -f generated/mgmt/mgmt-cp.yaml
-while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 0 ]; do
+kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
+while kubectl get po -n istio-system | grep Running | wc -l | grep 9 ; [ $? -ne 0 ]; do
     echo TSB control plane is not yet ready
     sleep 5s
 done
-kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
+
 
 #Bookinfo
 kubectl create secret tls bookinfo-certs -n default \
@@ -266,7 +267,7 @@ kubectl -n bookinfo create secret tls bookinfo-certs \
     --key $(yq r $VARS_YAML k8s.bookinfoCertDir)/privkey.pem \
     --cert $(yq r $VARS_YAML k8s.bookinfoCertDir)/fullchain.pem
 while kubectl get po -n bookinfo | grep Running | wc -l | grep 7 ; [ $? -ne 0 ]; do
-    echo Cert Manager is not yet ready
+    echo Bookinfo is not yet ready
     sleep 5s
 done
 while kubectl get service tsb-gateway-bookinfo -n bookinfo | grep pending | wc -l | grep 0 ; [ $? -ne 0 ]; do
@@ -300,7 +301,7 @@ export INTERNAL_IP=$(gcloud beta compute --project=$(yq r $VARS_YAML gcp.env) in
 sleep 30s #need to let ssh wake up
 # Prepare VM
 scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null scripts/mesh-expansion.sh $EXTERNAL_IP:~
-ssh $EXTERNAL_IP ./mesh-expansion.sh
+ssh $EXTERNAL_IP -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./mesh-expansion.sh
 
 # Update YAMLs
 cp bookinfo/vm.yaml generated/bookinfo/
