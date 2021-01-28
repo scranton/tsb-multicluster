@@ -83,3 +83,16 @@ spec:
       mode: SIMPLE
       secretName: bookinfo-certs
 ---
+apiVersion: security.tsb.tetrate.io/v2
+kind: Group
+metadata:
+  tenant: tetrate
+  workspace: bookinfo-workspace
+  name: bookinfo-security
+spec:
+  displayName: bookinfo-security
+  description: bookinfo-security
+  namespaceSelector:
+    names:
+    - "*/bookinfo"
+  configMode: BRIDGED
