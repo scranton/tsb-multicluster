@@ -16,6 +16,8 @@ do
    curl -vv http://$T1_GATEWAY_IP
 done
 kubectl delete -f bookinfo/tmp1.yaml
+sleep 10
+kubectl delete po --selector='app=tsb-tier1'
 
 gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.workload1.clusterName) \
    --region $(yq r $VARS_YAML gcp.workload1.region) --project $(yq r $VARS_YAML gcp.env)
