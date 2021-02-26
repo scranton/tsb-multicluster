@@ -10,9 +10,9 @@ spec:
   telemetryStore:
     elastic:
       host: tsb.demo.zwickey.net
-      port: 8443
+      port: 443
   managementPlane:
     host: tsb.demo.zwickey.net
-    port: 8443
+    port: 443
     clusterName: gke2-cluster
     tenant: tetrate

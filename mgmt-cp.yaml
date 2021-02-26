@@ -11,9 +11,9 @@ spec:
   telemetryStore:
     elastic:
       host: xxx
-      port: 8443
+      port: 443
   managementPlane:
     host: xxx
-    port: 8443
+    port: 443
     clusterName: mgmt-cluster
     tenant: tetrate

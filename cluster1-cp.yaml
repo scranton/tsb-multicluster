@@ -10,9 +10,9 @@ spec:
   telemetryStore:
     elastic:
       host: xxxx
-      port: 8443
+      port: 443
   managementPlane:
     host: xxx
-    port: 8443
+    port: 443
     clusterName: gke1-cluster
     tenant: tetrate

@@ -14,6 +14,8 @@ gcloud container clusters create $(yq r $VARS_YAML gcp.mgmt.clusterName) \
     --machine-type=$(yq r $VARS_YAML gcp.mgmt.machineType) \
     --num-nodes=1 --min-nodes 0 --max-nodes 6 \
     --enable-autoscaling --enable-network-policy --release-channel=regular
+gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.mgmt.clusterName) \
+   --region $(yq r $VARS_YAML gcp.mgmt.region) --project $(yq r $VARS_YAML gcp.env)
 
 echo "Installing TSB mgmt cluster..."
 ENABLED=$(yq r $VARS_YAML tetrate.skipImages)
@@ -91,7 +93,7 @@ while nslookup $(yq r $VARS_YAML gcp.mgmt.fqdn) | grep $TSB_IP ; [ $? -ne 0 ]; d
 done
 
 echo "Logging into TSB mgmt cluster..."
-tctl config clusters set default --bridge-address $(yq r $VARS_YAML gcp.mgmt.fqdn):8443
+tctl config clusters set default --bridge-address $(yq r $VARS_YAML gcp.mgmt.fqdn):443
 tctl login --org tetrate --tenant tetrate --username admin --password $(yq r $VARS_YAML gcp.mgmt.password)
 sleep 3
 tctl get Clusters
@@ -127,15 +129,15 @@ done
 
 
 #Bookinfo
-kubectl create secret tls bookinfo-certs -n default \
+kubectl create secret tls bookinfo-certs -n t1 \
     --key $(yq r $VARS_YAML k8s.bookinfoCertDir)/privkey.pem \
     --cert $(yq r $VARS_YAML k8s.bookinfoCertDir)/fullchain.pem
 kubectl apply -f bookinfo/cluster-t1.yaml
-while kubectl get svc tsb-tier1 -n default | grep pending | wc -l | grep 0 ; [ $? -ne 0 ]; do
+while kubectl get svc tsb-tier1 -n t1 | grep pending | wc -l | grep 0 ; [ $? -ne 0 ]; do
     echo Tier 1 Gateway IP not assigned
     sleep 5s
 done
-export T1_GATEWAY_IP=$(kubectl get service tsb-tier1 -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export T1_GATEWAY_IP=$(kubectl get service tsb-tier1 -n t1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export T1_GATEWAY_IP_OLD=$(nslookup $(yq r $VARS_YAML bookinfo.fqdn) | grep 'Address:' | tail -n1 | awk '{print $2}')
 gcloud beta dns --project=$(yq r $VARS_YAML gcp.env) record-sets transaction start --zone=$(yq r $VARS_YAML gcp.acme.dnsZoneId)
 gcloud beta dns --project=$(yq r $VARS_YAML gcp.env) record-sets transaction remove $T1_GATEWAY_IP_OLD --name=$(yq r $VARS_YAML bookinfo.fqdn). --ttl=300 --type=A --zone=$(yq r $VARS_YAML gcp.acme.dnsZoneId)
@@ -180,6 +182,8 @@ gcloud container clusters create $(yq r $VARS_YAML gcp.workload1.clusterName) \
     --machine-type=$(yq r $VARS_YAML gcp.workload1.machineType) \
     --num-nodes=1 --min-nodes 0 --max-nodes 6 \
     --enable-autoscaling --enable-network-policy --release-channel=regular
+gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.workload1.clusterName) \
+   --region $(yq r $VARS_YAML gcp.workload1.region) --project $(yq r $VARS_YAML gcp.env)
 kubectl create ns istio-system
 kubectl create secret generic cacerts -n istio-system \
   --from-file=$(yq r $VARS_YAML k8s.istioCertDir)/ca-cert.pem \
@@ -189,8 +193,8 @@ kubectl create secret generic cacerts -n istio-system \
 kubectl apply -f generated/cluster1/cp-operator.yaml
 kubectl apply -f generated/cluster1/cluster-certs.yaml
 kubectl apply -f generated/cluster1/cluster-secrets.yaml
-while kubectl get po -n istio-system | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
-    echo XCP Operator is not yet ready
+while kubectl get po -n istio-system -l name=tsb-operator | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
+    echo TSB Operator is not yet ready
     sleep 5s
 done
 sleep 30 # Dig into why this is needed
@@ -199,8 +203,9 @@ yq write generated/cluster1/cluster1-cp.yaml -i "spec.hub" $(yq r $VARS_YAML tet
 yq write generated/cluster1/cluster1-cp.yaml -i "spec.telemetryStore.elastic.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 yq write generated/cluster1/cluster1-cp.yaml -i "spec.managementPlane.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 kubectl apply -f generated/cluster1/cluster1-cp.yaml
-while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 0 ]; do
-    echo TSB control plane is not yet ready
+#Edge Pod is the last thing to start
+while kubectl get po -n istio-system -l app=edge | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
+    echo Istio control plane is not yet ready
     sleep 5s
 done
 kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
@@ -235,6 +240,8 @@ gcloud container clusters create $(yq r $VARS_YAML gcp.workload2.clusterName) \
     --machine-type=$(yq r $VARS_YAML gcp.workload2.machineType) \
     --num-nodes=1 --min-nodes 0 --max-nodes 6 \
     --enable-autoscaling --enable-network-policy --release-channel=regular
+gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.workload2.clusterName) \
+   --region $(yq r $VARS_YAML gcp.workload2.region) --project $(yq r $VARS_YAML gcp.env)
  kubectl create ns istio-system
  kubectl create secret generic cacerts -n istio-system \
   --from-file=$(yq r $VARS_YAML k8s.istioCertDir)/ca-cert.pem \
@@ -254,7 +261,7 @@ yq write generated/cluster2/cluster2-cp.yaml -i "spec.hub" $(yq r $VARS_YAML tet
 yq write generated/cluster2/cluster2-cp.yaml -i "spec.telemetryStore.elastic.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 yq write generated/cluster2/cluster2-cp.yaml -i "spec.managementPlane.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 kubectl apply -f generated/cluster2/cluster2-cp.yaml
-while kubectl get po -n istio-system | grep Running | wc -l | grep 8 ; [ $? -ne 0 ]; do
+while kubectl get po -n istio-system -l app=edge | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
     echo TSB control plane is not yet ready
     sleep 5s
 done

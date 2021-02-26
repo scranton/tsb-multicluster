@@ -6,4 +6,9 @@ metadata:
   name: tsbmgmtplane
 spec:
   hub: xxxx
-  tenant: tetrate
+  organization: tetrate
+  components:
+    apiServer:
+      teamSyncSchedule: 0 * * * *
+    frontEnvoy:
+      port: 443
