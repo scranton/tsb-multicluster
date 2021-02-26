@@ -51,7 +51,7 @@ done
 
 tctl install manifest management-plane-operator --registry $(yq r $VARS_YAML tetrate.registry) > generated/mgmt/mp-operator.yaml
 kubectl apply -f generated/mgmt/mp-operator.yaml
-while kubectl get po -n tsb | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
+while kubectl get po -n tsb -l name=tsb-operator | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
     echo TSB Operator is not yet ready
     sleep 5s
 done
@@ -122,8 +122,9 @@ yq write generated/mgmt/mgmt-cp.yaml -i "spec.telemetryStore.elastic.host" $(yq 
 yq write generated/mgmt/mgmt-cp.yaml -i "spec.managementPlane.host" $(yq r $VARS_YAML gcp.mgmt.fqdn)
 kubectl apply -f generated/mgmt/mgmt-cp.yaml
 kubectl patch ControlPlane controlplane -n istio-system --patch '{"spec":{"meshExpansion":{}}}' --type merge
-while kubectl get po -n istio-system | grep Running | wc -l | grep 9 ; [ $? -ne 0 ]; do
-    echo TSB control plane is not yet ready
+#Edge is last thing to start
+while kubectl get po -n istio-system -l app=edge | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
+    echo Istio control plane is not yet ready
     sleep 5s
 done
 
@@ -251,8 +252,8 @@ gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.workload2.cluste
 kubectl apply -f generated/cluster2/cp-operator.yaml
 kubectl apply -f generated/cluster2/cluster-certs.yaml
 kubectl apply -f generated/cluster2/cluster-secrets.yaml
-while kubectl get po -n istio-system | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
-    echo XCP Operator is not yet ready
+while kubectl get po -n istio-system -l name=tsb-operator | grep Running | wc -l | grep 1 ; [ $? -ne 0 ]; do
+    echo TSB Operator is not yet ready
     sleep 5s
 done
 sleep 10 # Dig into why this is needed
