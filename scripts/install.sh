@@ -99,6 +99,7 @@ tctl get Clusters
 tctl install manifest cluster-operator \
     --registry $(yq r $VARS_YAML tetrate.registry) > generated/mgmt/cp-operator.yaml
 kubectl create ns istio-system
+
 kubectl create secret generic cacerts -n istio-system \
   --from-file=$(yq r $VARS_YAML k8s.istioCertDir)/ca-cert.pem \
   --from-file=$(yq r $VARS_YAML k8s.istioCertDir)/ca-key.pem \
@@ -151,7 +152,7 @@ done
 kubectl delete -f bookinfo/tmp1.yaml
 
 while nslookup $(yq r $VARS_YAML bookinfo.fqdn) | grep $T1_GATEWAY_IP ; [ $? -ne 0 ]; do
-	echo TSB DNS is not yet propagated
+	echo Tier1 Gateway DNS is not yet propagated
 	sleep 5s
 done
 

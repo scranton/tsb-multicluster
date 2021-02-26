@@ -3,7 +3,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: tmp-gateway
-  namespace: default
+  namespace: t1
 spec:
   selector:
     app: tsb-tier1

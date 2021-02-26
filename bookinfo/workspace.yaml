@@ -9,5 +9,5 @@ spec:
   displayName: bookinfo
   namespaceSelector:
     names:
-      - "*/default"
+      - "*/t1"
       - "*/bookinfo"
