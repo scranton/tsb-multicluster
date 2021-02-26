@@ -1,7 +1,7 @@
 # tsb-multicluster
 This project is meant to automate the paving of TSB Multi-cluster environments for common demo scenarios.  At the end of the installation you'll end up with TSB deployed and configured, a sample application deployed across 2 mult-region clusters, a VM integrated into one of the meshes serving app traffic, and a Tier 1 Gateway handling edge ingress and load balancing.  
 
-Is should look like this:
+It should look like this:
 ![](https://raw.githubusercontent.com/adamzwickey/tsb-multicluster/main/images/demo.png "arch")
 
 ## Prerequisites
