@@ -9,7 +9,7 @@ tctl delete -f bookinfo/tsb.yaml
 # Reset clusters with some baseline traffic
 gcloud container clusters get-credentials $(yq r $VARS_YAML gcp.mgmt.clusterName) \
    --region $(yq r $VARS_YAML gcp.mgmt.region) --project $(yq r $VARS_YAML gcp.env)
-export T1_GATEWAY_IP=$(kubectl get service tsb-tier1 -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export T1_GATEWAY_IP=$(kubectl get service tsb-tier1 -n t1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 kubectl apply -f bookinfo/tmp1.yaml
 for i in {1..50}
 do
