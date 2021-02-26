@@ -24,7 +24,7 @@ spec:
   description: bookinfo-tier1
   namespaceSelector:
     names:
-      - "mgmt-cluster/default"
+      - "mgmt-cluster/t1"
   configMode: BRIDGED
 ---
 apiVersion: gateway.tsb.tetrate.io/v2
@@ -72,7 +72,7 @@ metadata:
   tenant: tetrate
 spec:
   workloadSelector:
-    namespace: default
+    namespace: t1
     labels:
       app: tsb-tier1
   externalServers:
