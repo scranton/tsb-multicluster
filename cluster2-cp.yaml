@@ -6,13 +6,13 @@ metadata:
   name: controlplane
   namespace: istio-system
 spec:
-  hub: gcr.io/abz-env
+  hub: xxx
   telemetryStore:
     elastic:
-      host: tsb.demo.zwickey.net
+      host: xxxx
       port: 443
   managementPlane:
-    host: tsb.demo.zwickey.net
+    host: xxx
     port: 443
-    clusterName: gke2-cluster
+    clusterName: gke1-cluster
     tenant: tetrate
