@@ -12,9 +12,11 @@ mkdir -p generated/bookinfo
 
 GCP_PROJECT_ID="$(yq eval '.gcp.env' "${VARS_YAML}")"
 PRIVATE_DOCKER_REGISTRY=$(yq eval '.tetrate.registry' "${VARS_YAML}")
+
 ISTIO_CERT_DIR=$(yq eval '.k8s.istioCertDir' "${VARS_YAML}")
 BOOKINFO_CERT_DIR=$(yq eval '.k8s.bookinfoCertDir' "${VARS_YAML}")
 
+MGMT_FQDN=$(yq eval '.gcp.mgmt.fqdn' "${VARS_YAML}")
 BOOKINFO_FQDN=$(yq eval '.bookinfo.fqdn' "${VARS_YAML}")
 
 echo 'Deploying mgmt cluster...'
@@ -54,6 +56,10 @@ else
     echo 'Skipping image sync'
 fi
 
+# kubectl create clusterrolebinding cluster-admin-binding \
+#     --clusterrole=cluster-admin \
+#     --user="$(gcloud config get-value core/account)"
+
 GCP_ACCOUNT_JSON_KEY_FILE="$(yq eval '.gcp.accountJsonKey' "${VARS_YAML}")"
 
 kubectl apply --filename='https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.yaml'
@@ -68,17 +74,15 @@ do
     sleep 5s
 done
 
-MGMT_FQDN=$(yq eval '.gcp.mgmt.fqdn' "${VARS_YAML}")
-
 cp cluster-issuer.yaml generated/mgmt/cluster-issuer.yaml
 
-yq eval ".spec.acme.email = \"$(yq eval '.gcp.acme.email' "${VARS_YAML}")\"" \
+yq eval "(select(di == 0) | .spec.acme.email) |= \"$(yq eval '.gcp.acme.email' "${VARS_YAML}")\"" \
     --inplace generated/mgmt/cluster-issuer.yaml
-yq eval ".spec.acme.solvers[0].dns01.cloudDNS.project = \"${GCP_PROJECT_ID}\"" \
+yq eval "(select(di == 0) | .spec.acme.solvers[0].dns01.cloudDNS.project) |= \"${GCP_PROJECT_ID}\"" \
     --inplace generated/mgmt/cluster-issuer.yaml
-yq eval ".spec.acme.solvers[0].selector.dnsZones[0] = \"$(yq eval '.gcp.acme.dnsZone' "${VARS_YAML}")\"" \
+yq eval "(select(di == 0) | .spec.acme.solvers[0].selector.dnsZones[0]) |= \"$(yq eval '.gcp.acme.dnsZone' "${VARS_YAML}")\"" \
     --inplace generated/mgmt/cluster-issuer.yaml
-yq eval ".spec.dnsNames[0] = \"${MGMT_FQDN}\"" \
+yq eval "(select(di == 1) | .spec.dnsNames[0]) = \"${MGMT_FQDN}\"" \
     --inplace generated/mgmt/cluster-issuer.yaml
 
 kubectl create namespace tsb
@@ -115,12 +119,12 @@ tctl install manifest management-plane-secrets \
     --xcp-certs >generated/mgmt/mp-secrets.yaml
 
 # We're not going to use tsb cert since we already have one we're generating from cert-manager
-sed -i '' s/tsb-certs/tsb-cert-old/ generated/mgmt/mp-secrets.yaml
+sed --in-place 's/tsb-certs/tsb-cert-old/' generated/mgmt/mp-secrets.yaml
 kubectl apply --filename='generated/mgmt/mp-secrets.yaml'
 
 echo 'Deploying mgmt plane'
 
-sleep 10 # Dig into why this is needed
+sleep 10 # TODO: Dig into why this is needed
 
 cp mgmt-mp.yaml generated/mgmt/mp.yaml
 
@@ -189,13 +193,13 @@ tctl install manifest control-plane-secrets --cluster mgmt-cluster \
 kubectl apply --filename='generated/mgmt/mgmt-cluster-certs.yaml'
 kubectl apply --filename='generated/mgmt/mgmt-cluster-secrets.yaml'
 
-sleep 30 # Dig into why this is needed
+sleep 30 # TODO: Dig into why this is needed
 
 cp mgmt-cp.yaml generated/mgmt/mgmt-cp.yaml
 
 yq eval ".spec.hub = \"${PRIVATE_DOCKER_REGISTRY}\"" --inplace generated/mgmt/mgmt-cp.yaml
-yq eval "spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/mgmt/mgmt-cp.yaml
-yq eval "spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/mgmt/mgmt-cp.yaml
+yq eval ".spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/mgmt/mgmt-cp.yaml
+yq eval ".spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/mgmt/mgmt-cp.yaml
 
 kubectl apply --filename='generated/mgmt/mgmt-cp.yaml'
 kubectl patch ControlPlane controlplane --namespace='istio-system' --patch '{"spec":{"meshExpansion":{}}}' --type merge
@@ -252,11 +256,11 @@ GCP_WORKLOAD1_REGION=$(yq eval '.gcp.workload1.region' "${VARS_YAML}")
 GCP_WORKLOAD2_REGION=$(yq eval '.gcp.workload2.region' "${VARS_YAML}")
 
 cp cluster1.yaml generated/cluster1/
-yq eval "spec.locality.region = \"${GCP_WORKLOAD1_REGION}\"" --inplace generated/cluster1/cluster1.yaml
+yq eval ".spec.locality.region = \"${GCP_WORKLOAD1_REGION}\"" --inplace generated/cluster1/cluster1.yaml
 tctl apply -f generated/cluster1/cluster1.yaml
 
 cp cluster2.yaml generated/cluster2/
-yq eval "spec.locality.region = \"${GCP_WORKLOAD2_REGION}\"" --inplace generated/cluster2/cluster2.yaml
+yq eval ".spec.locality.region = \"${GCP_WORKLOAD2_REGION}\"" --inplace generated/cluster2/cluster2.yaml
 tctl apply -f generated/cluster2/cluster2.yaml
 
 tctl install cluster-certs --cluster gke1-cluster >generated/cluster1/cluster-certs.yaml
@@ -304,12 +308,12 @@ do
     sleep 5s
 done
 
-sleep 30 # Dig into why this is needed
+sleep 30 # TODO: Dig into why this is needed
 
 cp cluster1-cp.yaml generated/cluster1/
-yq eval "spec.hub = \"${PRIVATE_DOCKER_REGISTRY}\"" --inplace generated/cluster1/cluster1-cp.yaml
-yq eval "spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/cluster1/cluster1-cp.yaml
-yq eval "spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/cluster1/cluster1-cp.yaml
+yq eval ".spec.hub = \"${PRIVATE_DOCKER_REGISTRY}\"" --inplace generated/cluster1/cluster1-cp.yaml
+yq eval ".spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/cluster1/cluster1-cp.yaml
+yq eval ".spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/cluster1/cluster1-cp.yaml
 kubectl apply --filename='generated/cluster1/cluster1-cp.yaml'
 
 # Edge Pod is the last thing to start
@@ -352,6 +356,8 @@ kubectl delete --filename='bookinfo/tmp.yaml'
 
 kubectl apply --namespace='bookinfo' --filename='bookinfo/bookinfo-multi.yaml'
 
+read -rp "Press enter to continue"
+
 echo 'Deploying workload cluster 2...'
 
 GCP_WORKLOAD2_CLUSTER_NAME=$(yq eval '.gcp.workload2.clusterName' "${VARS_YAML}")
@@ -392,9 +398,9 @@ done
 sleep 10 # Dig into why this is needed
 
 cp cluster2-cp.yaml generated/cluster2/
-yq eval "spec.hub = \"${PRIVATE_DOCKER_REGISTRY}\"" --inplace generated/cluster2/cluster2-cp.yaml
-yq eval "spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/cluster2/cluster2-cp.yaml
-yq eval "spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/cluster2/cluster2-cp.yaml
+yq eval ".spec.hub = \"${PRIVATE_DOCKER_REGISTRY}\"" --inplace generated/cluster2/cluster2-cp.yaml
+yq eval ".spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/cluster2/cluster2-cp.yaml
+yq eval ".spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/cluster2/cluster2-cp.yaml
 kubectl apply -f generated/cluster2/cluster2-cp.yaml
 
 # Edge Pod is the last thing to start
@@ -441,8 +447,8 @@ kubectl apply --namespace='bookinfo' --filename='bookinfo/bookinfo-multi.yaml'
 tctl apply -f bookinfo/workspace.yaml
 
 cp bookinfo/tsb.yaml generated/bookinfo/tsb.yaml
-yq eval "spec.http[0].hostname = \"${BOOKINFO_FQDN}\"" --inplace generated/bookinfo/tsb.yaml
-yq eval "spec.externalServers[0].hostname = \"${BOOKINFO_FQDN}\"" --inplace generated/bookinfo/tsb.yaml
+yq eval ".spec.http[0].hostname = \"${BOOKINFO_FQDN}\"" --inplace generated/bookinfo/tsb.yaml
+yq eval ".spec.externalServers[0].hostname = \"${BOOKINFO_FQDN}\"" --inplace generated/bookinfo/tsb.yaml
 
 # Prepare VM Expansion
 # Create VM
@@ -476,10 +482,10 @@ ssh "${EXTERNAL_IP}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 VM_SSH_USER=$(yq eval '.gcp.vm.sshUser' "${VARS_YAML}")
 
 cp bookinfo/vm.yaml generated/bookinfo/
-yq eval "spec.address = \"${INTERNAL_IP}\"" --inplace generated/bookinfo/vm.yaml
-yq eval "metadata.annotations.\"sidecar-bootstrap.istio.io/proxy-instance-ip\" = \"${INTERNAL_IP}\"" --inplace generated/bookinfo/vm.yaml
-yq eval "metadata.annotations.\"sidecar-bootstrap.istio.io/ssh-host\" = \"${EXTERNAL_IP}\"" --inplace generated/bookinfo/vm.yaml
-yq eval "metadata.annotations.\"sidecar-bootstrap.istio.io/ssh-user\" = \"${VM_SSH_USER}\"" --inplace generated/bookinfo/vm.yaml
+yq eval ".spec.address = \"${INTERNAL_IP}\"" --inplace generated/bookinfo/vm.yaml
+yq eval ".metadata.annotations.\"sidecar-bootstrap.istio.io/proxy-instance-ip\" = \"${INTERNAL_IP}\"" --inplace generated/bookinfo/vm.yaml
+yq eval ".metadata.annotations.\"sidecar-bootstrap.istio.io/ssh-host\" = \"${EXTERNAL_IP}\"" --inplace generated/bookinfo/vm.yaml
+yq eval ".metadata.annotations.\"sidecar-bootstrap.istio.io/ssh-user\" = \"${VM_SSH_USER}\"" --inplace generated/bookinfo/vm.yaml
 
 #don't apply this so we can demo
 #tctl apply -f generated/bookinfo/tsb.yaml
