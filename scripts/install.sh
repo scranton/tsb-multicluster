@@ -26,6 +26,7 @@ GCP_MGMT_REGION="$(yq eval '.gcp.mgmt.region' "${VARS_YAML}")"
 GCP_MGMT_MACHINE_TYPE="$(yq eval '.gcp.mgmt.machineType' "${VARS_YAML}")"
 
 gcloud container clusters create "${GCP_MGMT_CLUSTER_NAME}" \
+    --project="${GCP_PROJECT_ID}" \
     --region="${GCP_MGMT_REGION}" \
     --machine-type="${GCP_MGMT_MACHINE_TYPE}" \
     --num-nodes=1 \
@@ -33,11 +34,10 @@ gcloud container clusters create "${GCP_MGMT_CLUSTER_NAME}" \
     --max-nodes=6 \
     --enable-autoscaling \
     --enable-network-policy \
-    --release-channel='regular' \
-    --project="${GCP_PROJECT_ID}"
+    --release-channel='regular'
 gcloud container clusters get-credentials "${GCP_MGMT_CLUSTER_NAME}" \
-    --region="${GCP_MGMT_REGION}" \
-    --project="${GCP_PROJECT_ID}"
+    --project="${GCP_PROJECT_ID}" \
+    --region="${GCP_MGMT_REGION}"
 
 echo 'Installing TSB mgmt cluster...'
 
@@ -56,13 +56,13 @@ else
     echo 'Skipping image sync'
 fi
 
-# kubectl create clusterrolebinding cluster-admin-binding \
-#     --clusterrole=cluster-admin \
-#     --user="$(gcloud config get-value core/account)"
+kubectl create clusterrolebinding cluster-admin-binding \
+    --clusterrole='cluster-admin' \
+    --user="$(gcloud config get-value core/account)"
 
 GCP_ACCOUNT_JSON_KEY_FILE="$(yq eval '.gcp.accountJsonKey' "${VARS_YAML}")"
 
-kubectl apply --filename='https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.yaml'
+kubectl apply --filename='https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml'
 kubectl create secret generic clouddns-dns01-solver-svc-acct \
     --namespace='cert-manager' \
     --from-file="${GCP_ACCOUNT_JSON_KEY_FILE}"
@@ -124,7 +124,7 @@ kubectl apply --filename='generated/mgmt/mp-secrets.yaml'
 
 echo 'Deploying mgmt plane'
 
-sleep 10 # TODO: Dig into why this is needed
+sleep 30 # TODO: Dig into why this is needed
 
 cp mgmt-mp.yaml generated/mgmt/mp.yaml
 
@@ -144,7 +144,10 @@ kubectl create job --namespace='tsb' teamsync-bootstrap --from='cronjob/teamsync
 echo 'Configuring DNS for TSB mgmt cluster...'
 
 TSB_IP_OLD=$(nslookup "${MGMT_FQDN}" | grep 'Address:' | tail -n1 | awk '{print $2}')
-TSB_IP=$(kubectl get services --namespace='tsb' envoy --output jsonpath='{.status.loadBalancer.ingress[0].ip}')
+TSB_IP=$(kubectl get services --namespace='tsb' envoy --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+echo "Old tsb ip: ${TSB_IP_OLD}"
+echo "New tsb ip: ${TSB_IP}"
 
 GCP_DNS_ZONE_ID=$(yq eval '.gcp.acme.dnsZoneId' "${VARS_YAML}")
 
@@ -152,9 +155,6 @@ gcloud beta dns --project="${GCP_PROJECT_ID}" record-sets transaction start --zo
 gcloud beta dns --project="${GCP_PROJECT_ID}" record-sets transaction remove "${TSB_IP_OLD}" --name="${MGMT_FQDN}." --ttl=300 --type=A --zone=$"${GCP_DNS_ZONE_ID}"
 gcloud beta dns --project="${GCP_PROJECT_ID}" record-sets transaction add "${TSB_IP}" --name="${MGMT_FQDN}." --ttl=300 --type=A --zone="${GCP_DNS_ZONE_ID}"
 gcloud beta dns --project="${GCP_PROJECT_ID}" record-sets transaction execute --zone="${GCP_DNS_ZONE_ID}"
-
-echo "Old tsb ip: ${TSB_IP_OLD}"
-echo "New tsb ip: ${TSB_IP}"
 
 until nslookup "${MGMT_FQDN}" | grep "${TSB_IP}"
 do
