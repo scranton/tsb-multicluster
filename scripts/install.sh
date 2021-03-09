@@ -218,13 +218,13 @@ kubectl create secret tls bookinfo-certs \
     --cert "${BOOKINFO_CERT_DIR}/fullchain.pem"
 kubectl apply --filename='bookinfo/cluster-t1.yaml'
 
-until [[ $(kubectl get svc tsb-tier1 -n t1 | grep -c pending) -eq 0 ]]
+until [[ $(kubectl get service tsb-tier1 --namespace='t1' | grep -c pending) -eq 0 ]]
 do
     echo 'Tier 1 Gateway IP not assigned'
     sleep 5s
 done
 
-T1_GATEWAY_IP=$(kubectl get service tsb-tier1 -n t1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+T1_GATEWAY_IP=$(kubectl get service tsb-tier1 --namespace='t1' --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 T1_GATEWAY_IP_OLD=$(nslookup "${BOOKINFO_FQDN}" | grep 'Address:' | tail -n1 | awk '{print $2}')
 
 gcloud beta dns --project="${GCP_PROJECT_ID}" record-sets transaction start --zone="${GCP_DNS_ZONE_ID}"
@@ -334,7 +334,7 @@ kubectl create secret tls bookinfo-certs \
     --key="${BOOKINFO_CERT_DIR}/privkey.pem" \
     --cert="${BOOKINFO_CERT_DIR}/fullchain.pem"
 
-until [[ $(kubectl get po -n bookinfo | grep -c Running) -ge 7 ]]
+until [[ $(kubectl get pods --namespace'bookinfo' | grep -c Running) -ge 7 ]]
 do
     echo 'Bookinfo is not yet ready'
     sleep 5s
@@ -346,7 +346,7 @@ do
     sleep 5s
 done
 
-GATEWAY_IP=$(kubectl get service tsb-gateway-bookinfo --namespace='bookinfo' -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+GATEWAY_IP=$(kubectl get service tsb-gateway-bookinfo --namespace='bookinfo' --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
 kubectl apply --filename='bookinfo/tmp.yaml'
 for i in {1..50}; do
@@ -355,8 +355,6 @@ done
 kubectl delete --filename='bookinfo/tmp.yaml'
 
 kubectl apply --namespace='bookinfo' --filename='bookinfo/bookinfo-multi.yaml'
-
-read -rp "Press enter to continue"
 
 echo 'Deploying workload cluster 2...'
 
@@ -401,7 +399,7 @@ cp cluster2-cp.yaml generated/cluster2/
 yq eval ".spec.hub = \"${PRIVATE_DOCKER_REGISTRY}\"" --inplace generated/cluster2/cluster2-cp.yaml
 yq eval ".spec.telemetryStore.elastic.host = \"${MGMT_FQDN}\"" --inplace generated/cluster2/cluster2-cp.yaml
 yq eval ".spec.managementPlane.host = \"${MGMT_FQDN}\"" --inplace generated/cluster2/cluster2-cp.yaml
-kubectl apply -f generated/cluster2/cluster2-cp.yaml
+kubectl apply --filename='generated/cluster2/cluster2-cp.yaml'
 
 # Edge Pod is the last thing to start
 until [[ $(kubectl get pods --namespace='istio-system' -l app=edge | grep -c Running) -ge 1 ]]
@@ -421,7 +419,7 @@ kubectl create secret tls bookinfo-certs \
     --key="${BOOKINFO_CERT_DIR}/privkey.pem" \
     --cert="${BOOKINFO_CERT_DIR}/fullchain.pem"
 
-until [[ $(kubectl get po -n bookinfo | grep -c Running) -ge 7 ]]
+until [[ $(kubectl get pods --namespace='bookinfo' | grep -c Running) -ge 7 ]]
 do
     echo 'Bookinfo is not yet ready'
     sleep 5s
@@ -433,7 +431,7 @@ do
     sleep 5s
 done
 
-GATEWAY_IP=$(kubectl get service tsb-gateway-bookinfo --namespace='bookinfo' -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+GATEWAY_IP=$(kubectl get service tsb-gateway-bookinfo --namespace='bookinfo' --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
 kubectl apply --filename='bookinfo/tmp.yaml'
 for i in {1..50}; do
